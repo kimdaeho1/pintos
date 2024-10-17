@@ -9,6 +9,8 @@
 #include "../debug.h"
 #include "threads/malloc.h"
 
+#include "include/vm/vm.h"
+
 #define list_elem_to_hash_elem(LIST_ELEM)                       \
 	list_entry(LIST_ELEM, struct hash_elem, list_elem)
 
@@ -24,6 +26,7 @@ static void rehash (struct hash *);
 bool
 hash_init (struct hash *h,
 		hash_hash_func *hash, hash_less_func *less, void *aux) {
+	// /**/printf("------- hash_init -------\n");
 	h->elem_cnt = 0;
 	h->bucket_cnt = 4;
 	h->buckets = malloc (sizeof *h->buckets * h->bucket_cnt);
@@ -33,8 +36,10 @@ hash_init (struct hash *h,
 
 	if (h->buckets != NULL) {
 		hash_clear (h, NULL);
+		// /**/printf("------- hash_init end (h->buckets != NULL) -------\n");
 		return true;
 	} else
+		// /**/printf("------- hash_init end (h->buckets == NULL) -------\n");
 		return false;
 }
 
@@ -49,6 +54,7 @@ hash_init (struct hash *h,
    whether done in DESTRUCTOR or elsewhere. */
 void
 hash_clear (struct hash *h, hash_action_func *destructor) {
+	// /**/printf("------- hash_clear -------\n");
 	size_t i;
 
 	for (i = 0; i < h->bucket_cnt; i++) {
@@ -65,6 +71,7 @@ hash_clear (struct hash *h, hash_action_func *destructor) {
 	}
 
 	h->elem_cnt = 0;
+	// /**/printf("------- hash_clear end -------\n");
 }
 
 /* Destroys hash table H.
@@ -79,9 +86,11 @@ hash_clear (struct hash *h, hash_action_func *destructor) {
    elsewhere. */
 void
 hash_destroy (struct hash *h, hash_action_func *destructor) {
+	// /**/printf("------- hash_destroy -------\n");
 	if (destructor != NULL)
 		hash_clear (h, destructor);
 	free (h->buckets);
+	// /**/printf("------- hash_destroy end -------\n");
 }
 
 /* Inserts NEW into hash table H and returns a null pointer, if
@@ -90,6 +99,7 @@ hash_destroy (struct hash *h, hash_action_func *destructor) {
    without inserting NEW. */
 struct hash_elem *
 hash_insert (struct hash *h, struct hash_elem *new) {
+	// /**/printf("------- hash_insert -------\n");
 	struct list *bucket = find_bucket (h, new);
 	struct hash_elem *old = find_elem (h, bucket, new);
 
@@ -98,6 +108,7 @@ hash_insert (struct hash *h, struct hash_elem *new) {
 
 	rehash (h);
 
+	// /**/printf("------- hash_insert end -------\n");
 	return old;
 }
 
@@ -121,6 +132,7 @@ hash_replace (struct hash *h, struct hash_elem *new) {
    null pointer if no equal element exists in the table. */
 struct hash_elem *
 hash_find (struct hash *h, struct hash_elem *e) {
+	// /**/printf("------- hash_find -------\n");
 	return find_elem (h, find_bucket (h, e), e);
 }
 
@@ -275,7 +287,7 @@ uint64_t
 hash_int (int i) {
 	return hash_bytes (&i, sizeof i);
 }
-
+
 /* Returns the bucket in H that E belongs in. */
 static struct list *
 find_bucket (struct hash *h, struct hash_elem *e) {
@@ -288,11 +300,11 @@ find_bucket (struct hash *h, struct hash_elem *e) {
 static struct hash_elem *
 find_elem (struct hash *h, struct list *bucket, struct hash_elem *e) {
 	struct list_elem *i;
-
 	for (i = list_begin (bucket); i != list_end (bucket); i = list_next (i)) {
 		struct hash_elem *hi = list_elem_to_hash_elem (i);
-		if (!h->less (hi, e, h->aux) && !h->less (e, hi, h->aux))
+		if (!h->less (hi, e, h->aux) && !h->less (e, hi, h->aux)){
 			return hi;
+		}
 	}
 	return NULL;
 }
@@ -383,6 +395,8 @@ static void
 insert_elem (struct hash *h, struct list *bucket, struct hash_elem *e) {
 	h->elem_cnt++;
 	list_push_front (bucket, &e->list_elem);
+	struct hash_elem *eee = list_elem_to_hash_elem(list_begin(&bucket));
+	struct page *page = hash_entry(eee, struct page, elem);
 }
 
 /* Removes E from hash table H. */
